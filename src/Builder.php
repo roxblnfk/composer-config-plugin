@@ -13,7 +13,7 @@ class Builder
     /**
      * @var string path to output assembled configs
      */
-    protected $outputDir;
+    protected string $outputDir;
 
     /**
      * @var array configurations
@@ -22,7 +22,7 @@ class Builder
 
     private const OUTPUT_DIR_SUFFIX = '-output';
 
-    public function __construct($outputDir = null)
+    public function __construct(string $outputDir = null)
     {
         $this->setOutputDir($outputDir);
     }
@@ -38,16 +38,11 @@ class Builder
         return $alt;
     }
 
-    public function setOutputDir($outputDir)
+    public function setOutputDir(?string $outputDir)
     {
         $this->outputDir = $outputDir
-            ? static::buildAbsPath($this->getBaseDir(), $outputDir)
+            ? static::buildAbsPath(static::findBaseDir(), $outputDir)
             : static::findOutputDir();
-    }
-
-    public function getBaseDir(): string
-    {
-        return dirname(__DIR__, 4);
     }
 
     public function getOutputDir(): string
@@ -84,7 +79,8 @@ class Builder
 
     public static function findBaseDir(): string
     {
-        return dirname(__DIR__, 4);
+        $list = explode(DIRECTORY_SEPARATOR, __DIR__);
+        return $list[3] !== 'vendor' ? getcwd() : dirname(__DIR__, 4);
     }
 
     /**
@@ -116,7 +112,15 @@ class Builder
 
     public static function buildAbsPath(string $dir, string $file): string
     {
-        return strncmp($file, DIRECTORY_SEPARATOR, 1) === 0 ? $file : $dir . DIRECTORY_SEPARATOR . $file;
+        if ($file === '') {
+            throw new \Exception('Empty file name');
+        }
+        if ($file[0] !== '.' && strpos($file, ':') !== false) {
+            return $file;
+        }
+        return $file[0] === DIRECTORY_SEPARATOR
+            ? $dir . $file
+            : $dir . DIRECTORY_SEPARATOR . $file;
     }
 
     /**
